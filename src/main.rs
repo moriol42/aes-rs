@@ -14,24 +14,36 @@ fn main() {
         Vec::from([32, 189, 53, 8]),
         Vec::from([253, 48, 187, 78]),
     ]);
-    let res = add_round_key(state, round_key);
+    let res = add_round_key(&state, &round_key);
     println!("{:?}", res);
-    println!("{}", matrix_to_string(res));*/
+    println!("{}", matrix_to_string(&res));*/
 
     /*let text = "abcdefghijklmnop";
     let mat = str_to_matrix(text);
     println!("{:?}", mat);
-    let s = matrix_to_string(mat);
+    let s = matrix_to_string(&mat);
 
     println!("{}", s);*/
 
-    let state = Vec::from([
+    /*let state = Vec::from([
         Vec::from([251, 64, 182, 81]),
         Vec::from([146, 168, 33, 80]),
         Vec::from([199, 159, 195, 24]),
         Vec::from([64, 80, 182, 255]),
     ]);
 
-    println!("{}", matrix_to_string(sub_bytes(state, true)));
+    println!("{}", matrix_to_string(&sub_bytes(&state, true)));*/
+
+    let mut state = Vec::from([
+        Vec::from([108, 106, 71, 86]),
+        Vec::from([96, 62, 38, 72]),
+        Vec::from([42, 184, 92, 209]),
+        Vec::from([94, 79, 8, 54]),
+    ]);
     
+    mix_columns(&mut state, true);
+    println!("{:?}", state);
+    inv_shift_rows(&mut state);
+
+    println!("{}", matrix_to_string(&state));
 }
