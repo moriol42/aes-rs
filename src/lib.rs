@@ -49,6 +49,7 @@ pub fn str_to_matrix(text: &str) -> Vec<Vec<u8>> {
 }
 
 pub fn matrix_to_string(mat: &Vec<Vec<u8>>) -> String {
+    /* Convert a 4x4 matrix of u8 into a string */
     let mut s = String::new();
     for i in 0..4 {
         for j in 0..4 {
@@ -59,6 +60,7 @@ pub fn matrix_to_string(mat: &Vec<Vec<u8>>) -> String {
 }
 
 pub fn add_round_key(mat: &Vec<Vec<u8>>, round_key: &Vec<Vec<u8>>) -> Vec<Vec<u8>> {
+    /* XOR the 4x4 matrix mat with the round key (4x4 matrix) */
     mat.iter()
         .zip(round_key.iter())
         .map(|(mat_row, k_row)| {
@@ -72,6 +74,7 @@ pub fn add_round_key(mat: &Vec<Vec<u8>>, round_key: &Vec<Vec<u8>>) -> Vec<Vec<u8
 }
 
 pub fn sub_bytes(mat: &Vec<Vec<u8>>, inv: bool) -> Vec<Vec<u8>> {
+    /* Bytes substitution */
     let s = if inv { INV_S_BOX } else { S_BOX };
     mat.iter()
         .map(|row| row.iter().map(|x| s[*x as usize]).collect::<Vec<u8>>())
@@ -81,9 +84,9 @@ pub fn sub_bytes(mat: &Vec<Vec<u8>>, inv: bool) -> Vec<Vec<u8>> {
 pub fn shift_rows(mat: &mut Vec<Vec<u8>>) -> () {
     /* Shift rows of mat. Warning: rows and columns are inverted */
     for i in 1..4 {
-        let sauv = [mat[0][i], mat[1][i], mat[2][i], mat[3][i]];
+        let bak = [mat[0][i], mat[1][i], mat[2][i], mat[3][i]];
         for j in 0..4 {
-            mat[j][i] = sauv[(j + i) % 4];
+            mat[j][i] = bak[(j + i) % 4];
         }
     }
 }
@@ -91,14 +94,15 @@ pub fn shift_rows(mat: &mut Vec<Vec<u8>>) -> () {
 pub fn inv_shift_rows(mat: &mut Vec<Vec<u8>>) -> () {
     /* Reverse the shift of the rows of mat. Warning: rows and columns are inverted */
     for i in 1..4 {
-        let sauv = [mat[0][i], mat[1][i], mat[2][i], mat[3][i]];
+        let bak = [mat[0][i], mat[1][i], mat[2][i], mat[3][i]];
         for j in 0..4 {
-            mat[j][i] = sauv[(j + 4 - i) % 4];
+            mat[j][i] = bak[(j + 4 - i) % 4];
         }
     }
 }
 
 fn gal_mul(mut x: u8, mut y: u8) -> u8 {
+    /* Multiplication in galois field */
     let mut p = 0;
     while x != 0 && y != 0 {
         if y & 1 != 0 {
@@ -124,6 +128,8 @@ const INV_MIX: [[u8; 4]; 4] = [
 ];
 
 pub fn mix_columns(mat: &mut Vec<Vec<u8>>, inv: bool) -> () {
+    /* Mix the columns by doing mat^T x mix_mat (since rows
+    and columns are inverted) */
     let mix_mat = if inv { INV_MIX } else { MIX };
     let mut mat2 = Vec::new();
     for i in 0..4 {
