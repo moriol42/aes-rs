@@ -36,73 +36,53 @@ const INV_S_BOX: [u8; 256] = [
     0x17, 0x2B, 0x04, 0x7E, 0xBA, 0x77, 0xD6, 0x26, 0xE1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0C, 0x7D,
 ];
 
-pub fn str_to_matrix(text: &str) -> Vec<Vec<u8>> {
-    /* Converts text into a 4x4 matrix of u8. */
-    let bytes = Vec::from_iter(text.bytes());
-    let mut mat = Vec::new();
+pub fn str_to_state(text: &str) -> Vec<u8> {
+    /* Converts text into a vector of u8 of length 16. */
+    Vec::from_iter(text.bytes())
+}
 
-    for i in 0..4 {
-        mat.push(Vec::from(&bytes[4 * i..4 * (i + 1)]));
+pub fn state_to_string(state: &Vec<u8>) -> String {
+    /* Convert a vector of length 16 of u8 into a string */
+    state.iter().map(|c| *c as char).collect::<String>()
+}
+
+pub fn add_round_key(state: &mut Vec<u8>, round_key: &Vec<u8>) -> () {
+    /* XOR the vector of u8 of length 16 state with the round key (vector of u8 of length 16) */
+    for i in 0..16 {
+        state[i] ^= round_key[i];
     }
-
-    mat
 }
 
-pub fn matrix_to_string(mat: &Vec<Vec<u8>>) -> String {
-    /* Convert a 4x4 matrix of u8 into a string */
-    let mut s = String::new();
-    for i in 0..4 {
-        for j in 0..4 {
-            s.push(char::from(mat[i][j]));
-        }
-    }
-    s
-}
-
-pub fn add_round_key(mat: &Vec<Vec<u8>>, round_key: &Vec<Vec<u8>>) -> Vec<Vec<u8>> {
-    /* XOR the 4x4 matrix mat with the round key (4x4 matrix) */
-    mat.iter()
-        .zip(round_key.iter())
-        .map(|(mat_row, k_row)| {
-            mat_row
-                .iter()
-                .zip(k_row.iter())
-                .map(|(x, k)| x ^ k)
-                .collect::<Vec<u8>>()
-        })
-        .collect::<Vec<Vec<u8>>>()
-}
-
-pub fn sub_bytes(mat: &Vec<Vec<u8>>, inv: bool) -> Vec<Vec<u8>> {
+pub fn sub_bytes(state: &mut Vec<u8>, inv: bool) -> () {
     /* Bytes substitution */
     let s = if inv { INV_S_BOX } else { S_BOX };
-    mat.iter()
-        .map(|row| row.iter().map(|x| s[*x as usize]).collect::<Vec<u8>>())
-        .collect::<Vec<Vec<u8>>>()
+    for i in 0..16 {
+        state[i] = s[state[i] as usize];
+    }
 }
 
-pub fn shift_rows(mat: &mut Vec<Vec<u8>>) -> () {
-    /* Shift rows of mat. Warning: rows and columns are inverted */
+pub fn shift_rows(state: &mut Vec<u8>) -> () {
+    /* Shift rows of state. Warning: rows and columns are inverted */
     for i in 1..4 {
-        let bak = [mat[0][i], mat[1][i], mat[2][i], mat[3][i]];
+        let bak = [state[i], state[i + 4], state[i + 8], state[i + 12]];
         for j in 0..4 {
-            mat[j][i] = bak[(j + i) % 4];
+            state[i + 4 * j] = bak[(j + i) % 4];
         }
     }
 }
 
-pub fn inv_shift_rows(mat: &mut Vec<Vec<u8>>) -> () {
-    /* Reverse the shift of the rows of mat. Warning: rows and columns are inverted */
+pub fn inv_shift_rows(state: &mut Vec<u8>) -> () {
+    /* Reverse the shift of the rows of state. Warning: rows and columns are inverted */
     for i in 1..4 {
-        let bak = [mat[0][i], mat[1][i], mat[2][i], mat[3][i]];
+        let bak = [state[i], state[i + 4], state[i + 8], state[i + 12]];
         for j in 0..4 {
-            mat[j][i] = bak[(j + 4 - i) % 4];
+            state[i + 4 * j] = bak[(j + 4 - i) % 4];
         }
     }
 }
 
 fn gal_mul(mut x: u8, mut y: u8) -> u8 {
-    /* Multiplication in galois field */
+    /* Multiplication in galois field GF(2^8) */
     let mut p = 0;
     while x != 0 && y != 0 {
         if y & 1 != 0 {
@@ -127,20 +107,60 @@ const INV_MIX: [[u8; 4]; 4] = [
     [9, 13, 11, 14],
 ];
 
-pub fn mix_columns(mat: &mut Vec<Vec<u8>>, inv: bool) -> () {
-    /* Mix the columns by doing mat^T x mix_mat (since rows
+pub fn mix_columns(state: &mut Vec<u8>, inv: bool) -> () {
+    /* Mix the columns by doing state^T x mix_state (since rows
     and columns are inverted) */
-    let mix_mat = if inv { INV_MIX } else { MIX };
-    let mut mat2 = Vec::new();
+    let mix_state = if inv { INV_MIX } else { MIX };
+    let mut state2 = Vec::new();
     for i in 0..4 {
-        mat2.push(Vec::new());
         for j in 0..4 {
             let mut x = 0;
             for k in 0..4 {
-                x ^= gal_mul(mat[i][k], mix_mat[k][j]);
+                x ^= gal_mul(state[4 * i + k], mix_state[k][j]);
             }
-            mat2[i].push(x);
+            state2.push(x);
         }
     }
-    *mat = mat2;
+    *state = state2;
+}
+
+pub fn aes_encrypt_block(block: &Vec<u8>, expanded_key: &Vec<Vec<u8>>) -> Vec<u8> {
+    /* Encrypt a 16 bytes block with the expanded key expanded_key using aes */
+    let mut state = block.clone();
+    add_round_key(&mut state, &expanded_key[0]);
+    for i in 1..10 {
+        sub_bytes(&mut state, false);
+        shift_rows(&mut state);
+        mix_columns(&mut state, false);
+        add_round_key(&mut state, &expanded_key[i]);
+    }
+    sub_bytes(&mut state, false);
+    shift_rows(&mut state);
+    add_round_key(&mut state, &expanded_key[10]);
+
+    state
+}
+
+pub fn aes_decrypt_block(block: &Vec<u8>, expanded_key: &Vec<Vec<u8>>) -> Vec<u8> {
+    /* Decrypt a 16 bytes block with the expanded key expanded_key using aes */
+    let mut state = block.clone();
+    println!("Add round 10");
+    add_round_key(&mut state, &expanded_key[10]);
+    inv_shift_rows(&mut state);
+    sub_bytes(&mut state, true);
+    for i in (1..10).rev() {
+        println!("Add round {}", i);
+        add_round_key(&mut state, &expanded_key[i]);
+        mix_columns(&mut state, true);
+        inv_shift_rows(&mut state);
+        sub_bytes(&mut state, true);
+    }
+    println!("Add round 0");
+    add_round_key(&mut state, &expanded_key[0]);
+
+    state
+}
+
+pub fn key_expansion(key: &Vec<u8>) -> Vec<Vec<u8>> {
+    panic!("TODO");
 }
