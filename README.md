@@ -1,6 +1,6 @@
 # aes-rs
 
-An AES implementation written in rust.
+A work in progress AES-128 implementation written in rust.
 
 **Warning: Do NOT use this code in production, it may contain security flaws[^1].**
 
