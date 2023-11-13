@@ -144,23 +144,20 @@ pub fn aes_encrypt_block(block: &Vec<u8>, expanded_key: &Vec<Vec<u8>>) -> Vec<u8
 pub fn aes_decrypt_block(block: &Vec<u8>, expanded_key: &Vec<Vec<u8>>) -> Vec<u8> {
     /* Decrypt a 16 bytes block with the expanded key expanded_key using aes */
     let mut state = block.clone();
-    println!("Add round 10");
     add_round_key(&mut state, &expanded_key[10]);
     inv_shift_rows(&mut state);
     sub_bytes(&mut state, true);
     for i in (1..10).rev() {
-        println!("Add round {}", i);
         add_round_key(&mut state, &expanded_key[i]);
         mix_columns(&mut state, true);
         inv_shift_rows(&mut state);
         sub_bytes(&mut state, true);
     }
-    println!("Add round 0");
     add_round_key(&mut state, &expanded_key[0]);
 
     state
 }
 
-pub fn key_expansion(key: &Vec<u8>) -> Vec<Vec<u8>> {
+pub fn key_expansion(_key: &Vec<u8>) -> Vec<Vec<u8>> {
     panic!("TODO");
 }
