@@ -191,3 +191,18 @@ pub fn key_expansion(key: &Vec<u8>) -> Vec<Vec<u8>> {
 
     exp_key
 }
+
+pub fn aes_encrypt_ecb(msg: &Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
+    let n = msg.len();
+    println!("{n}");
+    assert!(n % 16 == 0);
+    let exp_key = key_expansion(&key);
+    let mut enc_msg = Vec::new();
+
+    for i in 0..(n / 16) {
+        let mut enc_block = aes_encrypt_block(&Vec::from(&msg[16 * i..16 * (i + 1)]), &exp_key);
+        enc_msg.append(&mut enc_block);
+    }
+
+    enc_msg
+}
