@@ -1,5 +1,4 @@
 # Crypto
-+ Key expansion
 + Encrypt / decrypt multiple blocks (ECB mode)
 + CBC
 

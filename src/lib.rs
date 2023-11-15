@@ -56,7 +56,8 @@ pub fn add_round_key(state: &mut Vec<u8>, round_key: &Vec<u8>) -> () {
 pub fn sub_bytes(state: &mut Vec<u8>, inv: bool) -> () {
     /* Bytes substitution */
     let s = if inv { INV_S_BOX } else { S_BOX };
-    for i in 0..16 {
+    let n = state.len();
+    for i in 0..n {
         state[i] = s[state[i] as usize];
     }
 }
@@ -158,6 +159,35 @@ pub fn aes_decrypt_block(block: &Vec<u8>, expanded_key: &Vec<Vec<u8>>) -> Vec<u8
     state
 }
 
-pub fn key_expansion(_key: &Vec<u8>) -> Vec<Vec<u8>> {
-    panic!("TODO");
+pub fn rot_word(word: &mut Vec<u8>) -> () {
+    let len = 4;
+    let bak = word[0];
+    for i in 0..(len - 1) {
+        word[i] = word[(i + 1) % len];
+    }
+    word[len - 1] = bak;
+}
+
+pub fn key_expansion(key: &Vec<u8>) -> Vec<Vec<u8>> {
+    let r_con = [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36];
+    let mut exp_key = Vec::new();
+    exp_key.push(key.clone());
+    println!("{:?}", key);
+
+    for i in 0..10 {
+        let mut w = Vec::from(&exp_key[i][12..16]);
+        rot_word(&mut w);
+        sub_bytes(&mut w, false);
+        w[0] ^= r_con[i];
+        let mut round_key: Vec<u8> = Vec::new();
+        for k in 0..4 {
+            for j in 0..4 {
+                w[j] ^= exp_key[i][j + 4 * k];
+            }
+            round_key.extend(&w);
+        }
+        exp_key.push(round_key);
+    }
+
+    exp_key
 }
