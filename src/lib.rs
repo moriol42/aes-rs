@@ -207,7 +207,6 @@ pub fn aes_encrypt_ecb(msg: &Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
     end_msg.extend(&vec![(16 - r) as u8; 16 - r]);
     let mut enc_block = aes_encrypt_block(&end_msg, &exp_key);
     enc_msg.append(&mut enc_block);
-    
 
     enc_msg
 }
@@ -234,7 +233,6 @@ pub fn aes_decrypt_ecb(msg: &Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
         }
         decr_msg.append(&mut decr_block);
     }
-    
 
     decr_msg
 }

@@ -20,7 +20,7 @@ struct Args {
 
 fn main() {
     //let args: Vec<String> = env::args().collect();
-    
+
     let args = Args::parse();
 
     let file_path = args.file;
