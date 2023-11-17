@@ -203,11 +203,38 @@ pub fn aes_encrypt_ecb(msg: &Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
     }
 
     let r = n % 16;
-    let mut end_msg = Vec::from(&msg[n_blocks..n_blocks + r]);
+    let mut end_msg = Vec::from(&msg[16 * n_blocks..16 * n_blocks + r]);
     end_msg.extend(&vec![(16 - r) as u8; 16 - r]);
     let mut enc_block = aes_encrypt_block(&end_msg, &exp_key);
     enc_msg.append(&mut enc_block);
     
 
     enc_msg
+}
+
+pub fn aes_decrypt_ecb(msg: &Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
+    let n = msg.len();
+    let exp_key = key_expansion(&key);
+    let mut decr_msg = Vec::new();
+    let n_blocks = n / 16;
+
+    if n % 16 != 0 {
+        panic!("");
+    }
+
+    for i in 0..n_blocks {
+        let mut decr_block = aes_decrypt_block(&Vec::from(&msg[16 * i..16 * (i + 1)]), &exp_key);
+
+        if i == n_blocks - 1 {
+            let r = decr_block.pop().unwrap();
+            for _ in 0..(r - 1) {
+                let x = decr_block.pop().unwrap();
+                assert!(x == r);
+            }
+        }
+        decr_msg.append(&mut decr_block);
+    }
+    
+
+    decr_msg
 }
