@@ -14,8 +14,13 @@ struct Args {
     #[arg(short, long)]
     decrypt: bool,
 
+    /// Input file
     #[arg(short, long)]
     file: String,
+
+    /// Output file
+    #[arg(short, long)]
+    out: Option<String>,
 }
 
 fn main() {
@@ -31,15 +36,25 @@ fn main() {
     //]);
     let key = str_to_state("MySuperSecretKey");
 
+    let out_file_path = match args.out {
+        None => 
+            if args.decrypt {
+                format!("{}.decr", &file_path)
+            } else {
+                format!("{}.enc", &file_path)
+            }
+        Some(path) => path
+    };
+
     if args.decrypt {
         let decr_file = aes_decrypt_ecb(&file, &key);
 
-        fs::write(&format!("{}.decr", &file_path), &decr_file)
+        fs::write(&out_file_path, &decr_file)
             .expect(&format!("Error cannot write file: {}.decr", &file_path));
     } else {
         let enc_file = aes_encrypt_ecb(&file, &key);
 
-        fs::write(&format!("{}.enc", &file_path), &enc_file)
+        fs::write(&out_file_path, &enc_file)
             .expect(&format!("Error cannot write file: {}.enc", &file_path));
     }
 }
