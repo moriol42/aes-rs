@@ -1,5 +1,4 @@
 # Crypto
-+ Encrypt / decrypt multiple blocks (ECB mode)
 + CBC
 + Improve memory usage: do not load the entire file in memory
 
