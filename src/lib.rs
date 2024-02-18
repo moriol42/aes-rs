@@ -228,7 +228,7 @@ pub fn aes_decrypt_ecb(msg: &Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
             let r = decr_block.pop().unwrap();
             for _ in 0..(r - 1) {
                 let x = decr_block.pop().unwrap();
-                assert!(x == r);
+                assert_eq!(x, r);
             }
         }
         decr_msg.append(&mut decr_block);
@@ -236,3 +236,61 @@ pub fn aes_decrypt_ecb(msg: &Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
 
     decr_msg
 }
+
+pub fn aes_encrypt_cbc(msg: &Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
+    let n = msg.len();
+    let exp_key = key_expansion(&key);
+    let mut enc_msg = Vec::new();
+
+    // Add the IV (initilization vector) to enc_msg
+    // TODO: choose a random one
+    for i in 0..16 {
+        enc_msg.push(i);
+    }
+    let n_blocks = n / 16;
+
+    for i in 0..n_blocks {
+        let mut block = Vec::from(&msg[16 * i..16 * (i + 1)]);
+        let rk = Vec::from(&enc_msg[16 * i..16 * (i + 1)]);
+        add_round_key(&mut block, &rk);
+        let mut enc_block = aes_encrypt_block(&block, &exp_key);
+        enc_msg.append(&mut enc_block);
+    }
+
+    let r = n % 16;
+    let mut end_msg = Vec::from(&msg[16 * n_blocks..16 * n_blocks + r]);
+    end_msg.extend(&vec![(16 - r) as u8; 16 - r]);
+    add_round_key(&mut end_msg, &Vec::from(&enc_msg[16 * n_blocks..16 * (n_blocks + 1)]));
+    let mut enc_block = aes_encrypt_block(&end_msg, &exp_key);
+    enc_msg.append(&mut enc_block);
+
+    enc_msg
+}
+
+pub fn aes_decrypt_cbc(msg: &Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
+    let n = msg.len();
+    let exp_key = key_expansion(&key);
+    let mut dec_msg = Vec::new();
+
+    let n_blocks = n / 16;
+    // The first block is the IV, thus the for loop ends at 1
+    for i in (1..n_blocks).rev() {
+        let block = Vec::from(&msg[16 * i..16 * (i + 1)]);
+        let mut decr_block = aes_decrypt_block(&block, &exp_key);
+        let rk = Vec::from(&msg[16 * (i - 1)..16 * i]);
+        add_round_key(&mut decr_block, &rk);
+
+        if i == n_blocks - 1 {
+            let r = decr_block.pop().unwrap();
+            for _ in 0..(r - 1) {
+                let x = decr_block.pop().unwrap();
+                assert_eq!(x, r);
+            }
+        }
+        decr_block.reverse();
+        dec_msg.append(&mut decr_block);
+    }
+    dec_msg.reverse();
+    dec_msg
+}
+

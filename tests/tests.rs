@@ -94,7 +94,6 @@ fn test_aes_block() -> () {
     let block = str_to_state(s);
 
     let encr = aes_encrypt_block(&block, &exp_key);
-    //println!("{:?}", encr);
     assert_eq!(
         encr, [111, 190, 111, 164, 48, 24, 71, 249, 204, 179, 198, 124, 43, 248, 40, 124]
     );
@@ -131,4 +130,46 @@ fn test_key_expansion() -> () {
     ]);
 
     assert_eq!(key_expansion(&key), exp_key);
+}
+
+#[test]
+fn test_aes_ecb() -> () {
+    let key = str_to_state("MySuperSecretKey");
+
+    // From https://en.wikipedia.org/wiki/Advanced_Encryption_Standard, CC BY-SA 4.0
+    let msg = "The Advanced Encryption Standard (AES), also known by its original name Rijndael, is a specification for the encryption of electronic data established by the U.S. National Institute of Standards and Technology (NIST) in 2001.";
+    let enc_msg = aes_encrypt_ecb(&str_to_state(&msg), &key);
+    let decr_msg = aes_decrypt_ecb(&enc_msg, &key);
+
+    assert_eq!(state_to_string(&decr_msg), msg);
+}
+
+#[test]
+fn test_aes_cbc1() -> () {
+    let key = str_to_state("MySuperSecretKey");
+
+    let mut msg = Vec::new();
+    for i in 0..32 {
+        msg.push(i);
+    }
+    dbg!(msg.len());
+    let encr = aes_encrypt_cbc(&msg, &key);
+    let decr = aes_decrypt_cbc(&encr, &key);
+
+    assert_eq!(decr, msg);
+}
+
+#[test]
+fn test_aes_cbc() -> () {
+    let key = str_to_state("MySuperSecretKey");
+
+    // From https://en.wikipedia.org/wiki/Advanced_Encryption_Standard, CC BY-SA 4.0
+    let msg = "The Advanced Encryption Standard (AES), also known by its original name Rijndael, is a specification for the encryption of electronic data established by the U.S. National Institute of Standards and Technology (NIST) in 2001.";
+    dbg!(msg.len());
+    let encr = aes_encrypt_cbc(&str_to_state(&msg), &key);
+    let decr = aes_decrypt_cbc(&encr, &key);
+
+    let decr_msg = state_to_string(&decr);
+    dbg!(&decr_msg);
+    assert_eq!(decr_msg, msg);
 }

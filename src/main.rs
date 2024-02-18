@@ -65,9 +65,10 @@ fn main() {
     let file_path = args.file;
     let file = fs::read(&file_path).expect(&format!("Error cannot read file: {}", &file_path));
 
-    let key_file =
+    let _key_file =
         fs::read_to_string(&args.key).expect(&format!("Error cannot read file: {}", &args.key)); //str_to_state("MySuperSecretKey");
-    let key = read_key(&key_file);
+    //let key = read_key(&key_file);
+    let key = str_to_state("MySuperSecretKey");
 
     let out_file_path = match args.out {
         None => {
@@ -81,12 +82,14 @@ fn main() {
     };
 
     if args.decrypt {
-        let decr_file = aes_decrypt_ecb(&file, &key);
+        let fun_decr = if args.cbc { aes_decrypt_cbc } else { aes_decrypt_ecb };
+        let decr_file = fun_decr(&file, &key);
 
         fs::write(&out_file_path, &decr_file)
             .expect(&format!("Error cannot write file: {}.decr", &file_path));
     } else {
-        let enc_file = aes_encrypt_ecb(&file, &key);
+        let fun_enc = if args.cbc { aes_encrypt_cbc } else { aes_encrypt_ecb };
+        let enc_file = fun_enc(&file, &key);
 
         fs::write(&out_file_path, &enc_file)
             .expect(&format!("Error cannot write file: {}.enc", &file_path));
