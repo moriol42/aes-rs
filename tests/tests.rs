@@ -152,7 +152,7 @@ fn test_aes_cbc1() -> () {
     for i in 0..32 {
         msg.push(i);
     }
-    dbg!(msg.len());
+
     let encr = aes_encrypt_cbc(&msg, &key);
     let decr = aes_decrypt_cbc(&encr, &key);
 
@@ -165,11 +165,11 @@ fn test_aes_cbc() -> () {
 
     // From https://en.wikipedia.org/wiki/Advanced_Encryption_Standard, CC BY-SA 4.0
     let msg = "The Advanced Encryption Standard (AES), also known by its original name Rijndael, is a specification for the encryption of electronic data established by the U.S. National Institute of Standards and Technology (NIST) in 2001.";
-    dbg!(msg.len());
+
     let encr = aes_encrypt_cbc(&str_to_state(&msg), &key);
     let decr = aes_decrypt_cbc(&encr, &key);
 
     let decr_msg = state_to_string(&decr);
-    dbg!(&decr_msg);
+
     assert_eq!(decr_msg, msg);
 }
